@@ -14,6 +14,7 @@ public class Parser
 	{
 		try
 		{
+			 MLN mln = MLN.getMLN();
 			 List<String> lines = Files.readAllLines(Paths.get(input), Charset.defaultCharset());
 			 for(String s : lines)
 			 {
@@ -31,15 +32,19 @@ public class Parser
 			 		if(s.contains(" v "))
 			 		{
 			 			//it is a clause..	
-			 			System.out.println(s+"\tClause");			 				 			
+			 			mln.addClause(s);
+			 			//System.out.println(s+"\tClause");			 				 			
 			 		}
 			 		else
 			 		{
 			 			//rule is a predicate..
-			 			System.out.println(s+"\tPredicate");
+			 			mln.addPredicate(s);
+			 			//System.out.println(s+"\tPredicate");
 			 		}
 			 	}
 			 }
+			 mln.printPredicates();
+			 mln.printClauses();
 		 }
 		 catch(IOException e)
 		 {
@@ -51,7 +56,46 @@ public class Parser
 	{
 		try
 		{
-			List<String> lines = Files.readAllLines(Paths.get(input), Charset.defaultCharset());
+			MLN mln = MLN.getMLN();
+			List<String> lines = Files.readAllLines(Paths.get(input), Charset.defaultCharset());						
+			
+			for(String line : lines)
+			{
+							
+				line = line.trim();
+				//check for comments..
+				if(line.equals(""))
+				{
+					continue;
+				}
+				String c = line.substring(0, 3);
+				if(c.equals("//"))
+				{
+					continue;
+				}
+				
+				int i = line.indexOf('(');
+				String name = line.substring(0, i).trim();
+				boolean isNegated = false;
+				if(name.charAt(0) == '!')
+				{
+					isNegated = true;
+					name = name.substring(1);
+				}
+				
+				Predicate p = mln.getPredicateByName(name);
+				
+				if(p.isClosedWorld && isNegated)
+				{
+					//ignore the line 
+				}
+				else
+				{
+					mln.addEvidence(line, p);
+				}
+			}
+			mln.printEvidence();
+			
 		}
 		catch(IOException e)
 		{

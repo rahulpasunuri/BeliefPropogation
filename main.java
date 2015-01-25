@@ -16,5 +16,8 @@ public class main
         	String queryFile = "samples/smoke/query.db";
         	        	
         	Parser.parseProgram(programFile);
+			Parser.parseEvidence(evidenceFile);
+			Parser.parseQuery(queryFile);		
+		
         }
 }
