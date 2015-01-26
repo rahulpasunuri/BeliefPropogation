@@ -43,8 +43,6 @@ public class Parser
 			 		}
 			 	}
 			 }
-			 mln.printPredicates();
-			 mln.printClauses();
 		 }
 		 catch(IOException e)
 		 {
@@ -94,8 +92,7 @@ public class Parser
 					mln.addEvidence(line, p);
 				}
 			}
-			mln.printEvidence();
-			
+
 		}
 		catch(IOException e)
 		{
@@ -107,7 +104,23 @@ public class Parser
 	{
 		try
 		{
+			MLN mln = MLN.getMLN();
 			List<String> lines = Files.readAllLines(Paths.get(input), Charset.defaultCharset());
+			for(String line : lines)
+			{
+				line = line.trim();
+				if(line.equals(""))
+				{
+					continue;
+				}
+				String c = line.substring(0, 2);
+				if(c.equals("//"))
+				{
+					continue;
+				}
+				mln.addQuery(line);								
+			}			
+			
 		}
 		catch(IOException e)
 		{

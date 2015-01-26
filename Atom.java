@@ -13,10 +13,35 @@ public class Atom
 	boolean isQuery;
 	Predicate pred;
 	List<String> liParamValues;
-	boolean isNegated;
+	boolean isNegated;		
+	List<Factor> liFactors;
+	List<Message> liMessages;
+	
+	public void initMessages()
+	{
+		liMessages = new ArrayList<Message>();
+		
+		int size = liFactors.size();
+		
+		for(int i=0; i<size; i++)
+		{
+			liMessages.add(new Message()); //how evidence ?? TODO
+		}
+	}
+	
+	public Atom(Predicate p, List<String> val)
+	{
+		liParamValues = val;
+		liFactors = new ArrayList<Factor>();
+		pred = p;
+		isQuery = p.isQuery;
+		isEvidence = false;		
+	}
 	
 	public Atom(String s, Predicate pred,boolean isEvidence)
 	{
+		liFactors = new ArrayList<Factor>();
+		pred.isEvidence = isEvidence;
 		this.isEvidence = isEvidence;
 		isQuery = !isEvidence;
 		liParamValues = new ArrayList<String>();

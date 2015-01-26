@@ -29,4 +29,14 @@ public class Type
 		}
 		domain.add(s);
 	}
+	
+	public void printType()
+	{
+		System.out.print(name+" - ");
+		for(String s : domain)
+		{
+			System.out.print(s+", ");
+		}
+		System.out.print("\n");
+	}
 }

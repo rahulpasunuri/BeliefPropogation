@@ -19,5 +19,22 @@ public class main
 			Parser.parseEvidence(evidenceFile);
 			Parser.parseQuery(queryFile);		
 		
+			MLN mln = MLN.getMLN();
+			///print parse files..
+			
+			mln.printPredicates();
+			mln.printClauses();
+ 			mln.printEvidence();
+			mln.printTypes();
+			mln.printQuery();
+			
+			
+			//generate factor graph
+			mln.generateFactorGraph();
+			
+			mln.printAtoms();
+			mln.printFactors();
+			
+			mln.performBP();
         }
 }

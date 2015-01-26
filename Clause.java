@@ -31,7 +31,7 @@ public class Clause
 			liLiterals.add(new Literal(s.substring(0, i).trim()));
 			//System.out.println(s);
 			s = s.substring(i+3).trim();
-			System.out.println(s);
+			//System.out.println(s);
 			i = s.indexOf(" v ");
 		}
 		liLiterals.add(new Literal(s.trim()));
