@@ -372,22 +372,37 @@ public  class MLN
 		
 		boolean isConverged = false;
 		double precision = 0.1;
-		
+		int iterations = 0;
 		while(!isConverged)
 		{
+		
+			//if(iterations >100)
+			//{
+			//	break;
+			//}
+			iterations++;
+			System.out.println("Running Iteration" + iterations);
 			isConverged = true;
 			
-			//send messages from atoms to factors..
+			//send messages from atoms to factors..			
 			for(Atom a : liAtoms)
 			{
 				int factorIndex =0;
+				double sumTrue =0, sumFalse = 0;
+				
+				//make back up of messages..
+				List<Message> bk = new ArrayList<Message>();
+				for(Message m : a.liMessages)
+				{
+					Message m1 = new Message();
+					m1.valTrue = m.valTrue;
+					m1.valFalse = m.valFalse;
+					bk.add(m1);
+				}
 				for(Factor f : a.liFactors)
 				{
 					//send message from a - > f				
 					Message m = a.liMessages.get(factorIndex);
-					Message bk = new Message();
-					bk.valTrue = m.valTrue;
-					bk.valFalse = m.valFalse;
 					m.valTrue =1;
 					m.valFalse=1;
 					int atomIndex = 0;
@@ -400,13 +415,26 @@ public  class MLN
 						}
 						atomIndex++;
 					}
-				
-					if(isConverged && (Math.abs(bk.valTrue-m.valTrue) > precision  || Math.abs(bk.valFalse - m.valFalse) > precision))
+					sumTrue += m.valTrue;
+					sumFalse += m.valFalse;
+			
+					factorIndex++;
+				}
+				int k=0; int size = a.liMessages.size();
+				while(k< size)
+				{
+					//normalize the values..					
+					Message m = a.liMessages.get(k);
+					m.valTrue = m.valTrue/sumTrue;
+					m.valFalse = m.valFalse/sumFalse;
+					
+					Message m1 = bk.get(k);
+					if(isConverged && (Math.abs(m1.valTrue-m.valTrue) > precision  || Math.abs(m1.valFalse - m.valFalse) > precision))
 					{
 						//check for convergence...
 						isConverged = false;
-					}				
-					factorIndex++;
+					}	
+					k++;
 				}
 			}
 		
@@ -414,11 +442,134 @@ public  class MLN
 			for(Factor f: liFactors)
 			{
 				int atomIndex = 0;
+				int totalAtoms = f.liAtoms.size();
 				for(Atom a : f.liAtoms)
 				{
 					//send message from f -> a
-
-				
+					Message bk = new Message();
+					Message m = f.liMessages.get(atomIndex);
+					bk.valTrue = m.valTrue;
+					bk.valFalse = m.valFalse;
+					m.valTrue = 0;
+					m.valFalse = 0;
+					List<String> combinations = generateTFCombinations(totalAtoms-1);					
+					
+					boolean isNegated = f.cl.liLiterals.get(atomIndex).isNegated;										
+					
+					if(combinations.size() == 1)
+					{
+						if(!isNegated)
+						{
+							m.valTrue = Math.exp(f.cl.weight);
+							m.valFalse = 0;
+						}
+						else
+						{
+							m.valTrue = 0;
+							m.valFalse = Math.exp(f.cl.weight);						
+						}
+						
+						if(isConverged && (Math.abs(bk.valTrue-m.valTrue) > precision  || Math.abs(bk.valFalse - m.valFalse) > precision))
+						{
+							//check for convergence...
+							isConverged = false;
+						}	
+					}
+					else 
+					{
+						for(String s: combinations)
+						{
+							double potentialTrue = Math.exp(f.cl.weight);
+							double potentialFalse = Math.exp(f.cl.weight);
+							//double potential = f.cl.weight;
+							//determine the truthness of the clause..
+							int k=0, strIndex = 0;
+							boolean isTrue = false;
+							for(Literal l : f.cl.liLiterals)
+							{
+								if(k!=atomIndex)
+								{
+									if((l.isNegated && s.charAt(strIndex) == 'F') || (!l.isNegated && s.charAt(strIndex) == 'T'))
+									{
+										/*
+										System.out.println();
+										f.printFactor();
+										a.printAtom();
+										System.out.println(s+"\t"+strIndex);
+										System.out.println();
+										*/
+										isTrue = true;
+										break;	
+									}								
+									strIndex++;
+								}
+								k++;							
+							}
+					
+							if(!isTrue)
+							{
+										/*
+										System.out.println();
+										f.printFactor();
+										a.printAtom();
+										System.out.println(s+"\t"+strIndex);
+										System.out.println();
+										*/
+							}
+							if(!isNegated)
+							{
+								if(!isTrue)
+								{
+									potentialFalse = 0;
+								}			 								 
+							}
+							else
+							{
+								if(!isTrue)
+								{
+									potentialTrue = 0;
+								}			 		
+							}
+							
+							double tempTrue = potentialTrue;
+							double tempFalse = potentialFalse;
+							strIndex = 0;;
+							for(Atom a1 : f.liAtoms)
+							{
+								if(a1!=a)
+								{
+									int fIndex = 0;
+									for(Factor f1: a1.liFactors)
+									{
+										if(f1==f)
+										{
+											break;
+										}
+										fIndex++;
+									}
+									if(s.charAt(strIndex) == 'T')
+									{
+										tempTrue *= a1.liMessages.get(fIndex).valTrue;
+										tempFalse *= a1.liMessages.get(fIndex).valFalse; 
+									}
+									else
+									{
+										tempTrue *= a1.liMessages.get(fIndex).valFalse;
+										tempFalse *= a1.liMessages.get(fIndex).valTrue;								
+									}
+									strIndex++;
+								}
+							}
+							m.valTrue += tempTrue;
+							m.valFalse += tempFalse;
+						}
+						//System.out.println(m.valTrue+"\t"+m.valFalse);
+						if(isConverged && (Math.abs(bk.valTrue-m.valTrue) > precision  || Math.abs(bk.valFalse - m.valFalse) > precision))
+						{
+							//check for convergence...
+							isConverged = false;
+						}							
+					}
 					atomIndex++;
 				}
 			}
@@ -446,12 +597,30 @@ public  class MLN
 						index++;
 					}
 					probTrue *= f.liMessages.get(index).valTrue;
-					probTrue *= f.liMessages.get(index).valFalse;
+					probFalse *= f.liMessages.get(index).valFalse;
 				}				
 				a.printAtom();
-				System.out.println(probTrue/(probTrue+probFalse));
+				System.out.println(probTrue/(probTrue+probFalse) + "\n");
+				System.out.println(probTrue+"\t"+probFalse+ "\n");
 			}
 		}
+	}
+	
+	public List<String> generateTFCombinations(int num)
+	{
+		List<String> ret = new ArrayList<String>();
+		if( num ==0)
+		{
+			ret.add("");
+			return ret;
+		}
+		List<String> t = generateTFCombinations(num-1);
+		for(String s : t)
+		{
+			ret.add("T"+s);
+			ret.add("F"+s);
+		}
+		return ret;		
 	}
 	
 }

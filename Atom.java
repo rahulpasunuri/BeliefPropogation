@@ -27,6 +27,21 @@ public class Atom
 		{
 			liMessages.add(new Message()); //how evidence ?? TODO
 		}
+		if(isEvidence)
+		{
+			for(Message m : liMessages)
+			{
+				if(isNegated)
+				{
+					m.valTrue =0;
+				}
+				else
+				{
+					m.valFalse = 0;					
+				}
+			}
+		}
+		
 	}
 	
 	public Atom(Predicate p, List<String> val)

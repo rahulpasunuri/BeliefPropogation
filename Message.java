@@ -15,18 +15,7 @@ public class Message
 	
 	public Message()
 	{
-		boolean isEvidence = false;
-		if(!isEvidence)
-		{
-			valTrue = 1;
-			valFalse = 1;
-		}
-		else
-		{
-			// how to handle negation ??? TODO EG: !Friends(Gary, Ann)
-			valTrue = 1;
-			valFalse = 0;
-		}
-		
+		valTrue = 1;
+		valFalse = 1;
 	}	
 }
