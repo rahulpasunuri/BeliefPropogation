@@ -11,9 +11,9 @@ public class main
 {
         public static void main(String[] args)
         { 
-        	String programFile = "samples/smoke/prog.mln";
-        	String evidenceFile = "samples/smoke/evidence.db";
-        	String queryFile = "samples/smoke/query.db";
+        	String programFile = "samples/smoke1/prog.mln";
+        	String evidenceFile = "samples/smoke1/evidence.db";
+        	String queryFile = "samples/smoke1/query.db";
         	        	
         	Parser.parseProgram(programFile);
 			Parser.parseEvidence(evidenceFile);

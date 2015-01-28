@@ -371,69 +371,59 @@ public  class MLN
 		}
 		
 		boolean isConverged = false;
-		double precision = 0.1;
+		double precision = 0.01;
 		int iterations = 0;
 		while(!isConverged)
 		{
-		
+
 			//if(iterations >100)
 			//{
 			//	break;
 			//}
 			iterations++;
 			System.out.println("Running Iteration" + iterations);
-			isConverged = true;
 			
 			//send messages from atoms to factors..			
 			for(Atom a : liAtoms)
 			{
-				int factorIndex =0;
-				double sumTrue =0, sumFalse = 0;
-				
-				//make back up of messages..
-				List<Message> bk = new ArrayList<Message>();
-				for(Message m : a.liMessages)
-				{
-					Message m1 = new Message();
-					m1.valTrue = m.valTrue;
-					m1.valFalse = m.valFalse;
-					bk.add(m1);
-				}
-				for(Factor f : a.liFactors)
-				{
-					//send message from a - > f				
-					Message m = a.liMessages.get(factorIndex);
-					m.valTrue =1;
-					m.valFalse=1;
-					int atomIndex = 0;
-					for( Atom a2 : f.liAtoms)
+				if(!a.isEvidence) // no need to change messages from evidence..
+				{									
+					int factorIndex =0;				
+					for(Factor f : a.liFactors)
 					{
-						if(a != a2)
+						//send message from a - > f				
+						Message m = a.liMessages.get(factorIndex);
+						m.truebk =1;
+						m.falsebk=1;
+						int atomIndex = 0;
+						for( Atom a2 : f.liAtoms)
 						{
-							m.valTrue *= f.liMessages.get(atomIndex).valTrue;
-							m.valFalse *= f.liMessages.get(atomIndex).valFalse;
-						}
-						atomIndex++;
+							if(a != a2)
+							{
+								m.truebk *= f.liMessages.get(atomIndex).valTrue;
+								m.falsebk *= f.liMessages.get(atomIndex).valFalse;
+							}
+							atomIndex++;
+						}					
+						factorIndex++;
 					}
-					sumTrue += m.valTrue;
-					sumFalse += m.valFalse;
-			
-					factorIndex++;
 				}
 				int k=0; int size = a.liMessages.size();
 				while(k< size)
-				{
+				{					
 					//normalize the values..					
 					Message m = a.liMessages.get(k);
-					m.valTrue = m.valTrue/sumTrue;
-					m.valFalse = m.valFalse/sumFalse;
+					//m.truebk = m.truebk/sumTrue;
+					//m.falsebk = m.falsebk/sumFalse;	
+					double sum = m.truebk + m.falsebk; 
+					//m.truebk = m.truebk/sum;
+					//m.falsebk = m.falsebk/sum;
 					
-					Message m1 = bk.get(k);
-					if(isConverged && (Math.abs(m1.valTrue-m.valTrue) > precision  || Math.abs(m1.valFalse - m.valFalse) > precision))
-					{
-						//check for convergence...
-						isConverged = false;
-					}	
+					System.out.println("Sending message from ");
+					a.printAtom();					
+					System.out.println(m.truebk + "\t"+m.falsebk);
+					System.out.println();
+					
 					k++;
 				}
 			}
@@ -444,14 +434,16 @@ public  class MLN
 				int atomIndex = 0;
 				int totalAtoms = f.liAtoms.size();
 				for(Atom a : f.liAtoms)
-				{
+				{				
+					if(a.isEvidence)
+					{
+						atomIndex++;						
+						continue;
+					}
 					//send message from f -> a
-					Message bk = new Message();
 					Message m = f.liMessages.get(atomIndex);
-					bk.valTrue = m.valTrue;
-					bk.valFalse = m.valFalse;
-					m.valTrue = 0;
-					m.valFalse = 0;
+					m.truebk = 0;
+					m.falsebk = 0;
 					List<String> combinations = generateTFCombinations(totalAtoms-1);					
 					
 					boolean isNegated = f.cl.liLiterals.get(atomIndex).isNegated;										
@@ -460,25 +452,20 @@ public  class MLN
 					{
 						if(!isNegated)
 						{
-							m.valTrue = Math.exp(f.cl.weight);
-							m.valFalse = 0;
+							m.truebk = Math.exp(f.cl.weight);
+							m.falsebk = 0;
 						}
 						else
 						{
-							m.valTrue = 0;
-							m.valFalse = Math.exp(f.cl.weight);						
+							m.truebk = 0;
+							m.falsebk = Math.exp(f.cl.weight);						
 						}
-						
-						if(isConverged && (Math.abs(bk.valTrue-m.valTrue) > precision  || Math.abs(bk.valFalse - m.valFalse) > precision))
-						{
-							//check for convergence...
-							isConverged = false;
-						}	
 					}
 					else 
 					{
 						for(String s: combinations)
 						{
+							
 							double potentialTrue = Math.exp(f.cl.weight);
 							double potentialFalse = Math.exp(f.cl.weight);
 							//double potential = f.cl.weight;
@@ -490,14 +477,9 @@ public  class MLN
 								if(k!=atomIndex)
 								{
 									if((l.isNegated && s.charAt(strIndex) == 'F') || (!l.isNegated && s.charAt(strIndex) == 'T'))
-									{
-										/*
-										System.out.println();
-										f.printFactor();
-										a.printAtom();
-										System.out.println(s+"\t"+strIndex);
-										System.out.println();
-										*/
+									{		
+										l.printLiteral();
+										System.out.println(s);								
 										isTrue = true;
 										break;	
 									}								
@@ -506,33 +488,27 @@ public  class MLN
 								k++;							
 							}
 					
-							if(!isTrue)
-							{
-										/*
-										System.out.println();
-										f.printFactor();
-										a.printAtom();
-										System.out.println(s+"\t"+strIndex);
-										System.out.println();
-										*/
-							}
 							if(!isNegated)
 							{
+								
 								if(!isTrue)
 								{
-									potentialFalse = 0;
+
+									potentialFalse = 1;
 								}			 								 
 							}
 							else
 							{
+								
 								if(!isTrue)
 								{
-									potentialTrue = 0;
+									potentialTrue = 1;
 								}			 		
 							}
 							
 							double tempTrue = potentialTrue;
 							double tempFalse = potentialFalse;
+							//System.out.println(potentialTrue+"\t"+potentialFalse);
 							strIndex = 0;;
 							for(Atom a1 : f.liAtoms)
 							{
@@ -550,29 +526,93 @@ public  class MLN
 									if(s.charAt(strIndex) == 'T')
 									{
 										tempTrue *= a1.liMessages.get(fIndex).valTrue;
-										tempFalse *= a1.liMessages.get(fIndex).valFalse; 
+										tempFalse *= a1.liMessages.get(fIndex).valTrue; 
 									}
 									else
 									{
 										tempTrue *= a1.liMessages.get(fIndex).valFalse;
-										tempFalse *= a1.liMessages.get(fIndex).valTrue;								
+										tempFalse *= a1.liMessages.get(fIndex).valFalse;								
 									}
 									strIndex++;
 								}
 							}
-							m.valTrue += tempTrue;
-							m.valFalse += tempFalse;
+							m.truebk += tempTrue;
+							m.falsebk += tempFalse;
 						}
-						//System.out.println(m.valTrue+"\t"+m.valFalse);
-						if(isConverged && (Math.abs(bk.valTrue-m.valTrue) > precision  || Math.abs(bk.valFalse - m.valFalse) > precision))
-						{
-							//check for convergence...
-							isConverged = false;
-						}							
+						///*
+						System.out.println("Sending message from ");
+						f.printFactor();
+						a.printAtom();						
+						System.out.println(m.truebk+"\t"+m.falsebk);
+						System.out.println();							
+						//*/
 					}
 					atomIndex++;
 				}
 			}
+			isConverged = true;
+
+			precision = 0.01;
+			isConverged = true;
+			for(Atom a : liAtoms)
+			{
+				if(!a.isEvidence && isConverged)
+				{
+					double probTrue = 1.0;
+					double probFalse = 1.0;
+					
+					double oldProbTrue = 1.0;
+					double oldProbFalse = 1.0;
+					
+					for(Factor f : a.liFactors)
+					{
+						int index = 0;
+						int size = f.liAtoms.size();
+						for(int i=0; i< size; i++)
+						{
+							if( f.liAtoms.get(i) == a)
+							{
+								break;
+							}
+							index++;
+						}
+												
+						probTrue *= f.liMessages.get(index).truebk;
+						probFalse *= f.liMessages.get(index).falsebk;
+						
+						oldProbTrue *= f.liMessages.get(index).valTrue;
+						oldProbFalse *= f.liMessages.get(index).valFalse;						
+					}				
+					
+					oldProbTrue = oldProbTrue/(oldProbTrue+ oldProbFalse);
+					probTrue = probTrue/(probTrue+ probFalse);
+					
+					if(Math.abs(oldProbTrue - probTrue) > precision)
+					{
+						isConverged = false;
+					}
+				
+				}
+			}
+			
+			//copy messages from backup..
+			for(Atom a : liAtoms)
+			{
+				for(Message m : a.liMessages)
+				{
+					m.backUp();
+				}
+			}
+			
+			for(Factor f : liFactors)
+			{
+				for(Message m : f.liMessages)
+				{
+					m.backUp();
+				}
+			}
+			
+			
 		}
 		System.out.println("*****************************************");
 		System.out.println("Printing Results");
@@ -601,7 +641,7 @@ public  class MLN
 				}				
 				a.printAtom();
 				System.out.println(probTrue/(probTrue+probFalse) + "\n");
-				System.out.println(probTrue+"\t"+probFalse+ "\n");
+				//System.out.println(probTrue+"\t"+probFalse+ "\n");
 			}
 		}
 	}

@@ -23,9 +23,9 @@ public class Factor
 		cl.printClause();
 		for(Atom a : liAtoms)
 		{
-			a.printAtom();
+			//a.printAtom();
 		}
-		System.out.println();
+		//System.out.println();
 	}
 	
 	public void initMessages()

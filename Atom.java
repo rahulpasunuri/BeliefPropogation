@@ -34,10 +34,12 @@ public class Atom
 				if(isNegated)
 				{
 					m.valTrue =0;
+					m.truebk = 0;
 				}
 				else
 				{
-					m.valFalse = 0;					
+					m.valFalse = 0;
+					m.falsebk = 0;					
 				}
 			}
 		}
